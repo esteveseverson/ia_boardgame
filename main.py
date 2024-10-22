@@ -71,9 +71,11 @@ def busca_amigos(origem: tuple, amigos: list[tuple], matriz_terreno: list) -> li
     aceitos, nao_aceitos = sorteio_amigos(amigos)
     aceitos_encontrados = 0
     visitado = 1
+    custo_total = 0
     
     for amigo in amigos:
         custo = AStar(origem, amigo, matriz_terreno)
+        custo_total = custo_total + custo
         aceitou = True if amigo in aceitos else False
         print(f'Custo para encontrar o personagem {visitado}: {custo} aceitou? {aceitou}')
         visitado += 1
@@ -84,7 +86,8 @@ def busca_amigos(origem: tuple, amigos: list[tuple], matriz_terreno: list) -> li
             print("Três amigos aceitaram! Voltando a origem")
             #logica de retorno
             break
-        
+    
+    print(f"O custo total da busca foi: {custo_total}")
     return aceitos
 
 MATRIZ = [
