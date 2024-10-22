@@ -1,3 +1,6 @@
+#imports
+import random
+
 # Definindo o ponto inicial e pontos de busca
 INICIO = (18, 22)
 PERSONAGENS = [(12, 4), (34, 5), (8, 9), (37, 23), (14, 35), (36, 36)]
@@ -18,8 +21,13 @@ class Node:
     def __lt__(self, other) -> bool:
         return self.f < other.f
     
+def sorteio_amigos(amigos):
+    aceitos = random.sample(amigos, 3)
+    nao_aceitos = [amigo for amigo in amigos if amigo not in aceitos]
+    return aceitos, nao_aceitos
+
 def distancia_manhattan(ponto1: tuple, ponto2: tuple) -> int:
-    return abs(ponto1[0] - ponto2[0]) + abs(ponto1[1] - ponto2[1])
+    return abs(ponto1.x - ponto2.x) + abs(ponto1.y - ponto2.y)
 
 def obter_vizinhos(no: tuple, matriz_terreno: list) -> list:
     vizinhos = []
@@ -61,6 +69,21 @@ def AStar(origem: tuple, destino: tuple, matriz_terreno: list) -> int | str:
                 vizinho.custo_heuristico = h
                 
     return 'sem solução'
+
+def busca_amigos(origem: tuple, amigos: list[tuple], matriz_terreno: list) -> list:
+    aceitos, nao_aceitos = sorteio_amigos(amigos)
+    aceitos_encontrados = 0
+    
+    for amigo in aceitos:
+        custo = AStar(origem, amigo, matriz_terreno)
+        print(f'Custo para encontrar {amigo}: {custo}')
+        aceitos_encontrados += 1
+        if aceitos_encontrados >=3:
+            print("Três amigos aceitaram! Voltando a origem")
+            #logica de retorno
+            break
+        
+    return aceitos
 
 matriz_terreno = [
     [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
@@ -109,4 +132,8 @@ matriz_terreno = [
 
 #for i in range (len(PERSONAGENS)):
 #    print(f'Distancia entre a origem e o ponto {i}: {distancia_manhattan(INICIO, PERSONAGENS[i])}')
+origem = Node(18, 22)
+amigos = [Node(4, 12), Node(5, 34), Node(9, 8), Node(23, 37), Node(35, 14), Node(36, 36)]
 
+aceitos = busca_amigos(origem, amigos, matriz_terreno)
+print("Amigos que aceitaram:", [(amigo.x, amigo.y) for amigo in aceitos])
