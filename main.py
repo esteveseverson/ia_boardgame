@@ -1,10 +1,7 @@
 #imports
 import random
 
-# Definindo o ponto inicial e pontos de busca
-INICIO = (18, 22)
-PERSONAGENS = [(12, 4), (34, 5), (8, 9), (37, 23), (14, 35), (36, 36)]
-
+#classes
 class Node:
     def __init__(self, x: int, y: int, custo_acumulado=0, custo_heuristico=0):
         #localizações
@@ -73,11 +70,16 @@ def AStar(origem: tuple, destino: tuple, matriz_terreno: list) -> int | str:
 def busca_amigos(origem: tuple, amigos: list[tuple], matriz_terreno: list) -> list:
     aceitos, nao_aceitos = sorteio_amigos(amigos)
     aceitos_encontrados = 0
+    visitado = 1
     
-    for amigo in aceitos:
+    for amigo in amigos:
         custo = AStar(origem, amigo, matriz_terreno)
-        print(f'Custo para encontrar {amigo}: {custo}')
-        aceitos_encontrados += 1
+        aceitou = True if amigo in aceitos else False
+        print(f'Custo para encontrar o personagem {visitado}: {custo} aceitou? {aceitou}')
+        visitado += 1
+        if aceitou == True:
+            aceitos_encontrados += 1
+            
         if aceitos_encontrados >=3:
             print("Três amigos aceitaram! Voltando a origem")
             #logica de retorno
@@ -85,7 +87,7 @@ def busca_amigos(origem: tuple, amigos: list[tuple], matriz_terreno: list) -> li
         
     return aceitos
 
-matriz_terreno = [
+MATRIZ = [
     [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
     [5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 5, 5, 5, 5, 10, 10, 10, 10, 10, 1, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
     [5, 5, 10, float('inf'), float('inf'), float('inf'), float('inf'), float('inf'), 10, float('inf'), float('inf'), float('inf'), float('inf'), float('inf'), float('inf'), 10, 5, 5, 5, 5, 10, float('inf'), float('inf'), float('inf'), 5, 1, 5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 5, 5],
@@ -132,8 +134,8 @@ matriz_terreno = [
 
 #for i in range (len(PERSONAGENS)):
 #    print(f'Distancia entre a origem e o ponto {i}: {distancia_manhattan(INICIO, PERSONAGENS[i])}')
-origem = Node(18, 22)
-amigos = [Node(4, 12), Node(5, 34), Node(9, 8), Node(23, 37), Node(35, 14), Node(36, 36)]
+INICIO = Node(18, 22)
+PERSONAGENS = [Node(4, 12), Node(5, 34), Node(9, 8), Node(23, 37), Node(35, 14), Node(36, 36)]
 
-aceitos = busca_amigos(origem, amigos, matriz_terreno)
+aceitos = busca_amigos(INICIO, PERSONAGENS, MATRIZ)
 print("Amigos que aceitaram:", [(amigo.x, amigo.y) for amigo in aceitos])
