@@ -1,125 +1,55 @@
-#imports
+import pygame
 import random
 
-#classes
-class Node:
-    def __init__(self, x: int, y: int, custo_acumulado=0, custo_heuristico=0):
-        #localizações
-        self.x = x
-        self.y = y
-        #custos
-        self.custo_acumulado = custo_acumulado
-        self.custo_heuristico = custo_heuristico
-        self.f = custo_acumulado + custo_heuristico # f = g + h
-        
-    def __eq__(self, other) -> bool:
-        return self.x == other.x and self.y == other.y
-    
-    def __lt__(self, other) -> bool:
-        return self.f < other.f
+pygame.init()
 
-#funções
+# Definindo as cores
+CORES = {
+    1: (169, 169, 169),         # Cinza
+    3: (139, 69, 19),           # Marrom
+    5: (0, 128, 0),             # Verde
+    10: (255, 255, 255),        # Branco
+    float('inf'): (255, 165, 0) # Laranja
+}
 
-#função de sorteio de amigos
-def sorteio_amigos(amigos):
-    aceitos = random.sample(amigos, 3)
-    nao_aceitos = [amigo for amigo in amigos if amigo not in aceitos]
-    return aceitos, nao_aceitos
+# configurações de tela
+tamanho_celula = 19  # Definindo o tamanho de cada quadradinho
+LARGURA_TELA, ALTURA_TELA = tamanho_celula * 42, tamanho_celula * 42 # tela do tamanho do tabueliro
 
-#menor distancia em uma matriz horinzontal/vertical
-def distancia_manhattan(ponto1: Node, ponto2: Node) -> int:
-    return abs(ponto1.x - ponto2.x) + abs(ponto1.y - ponto2.y)
+# Criando a tela
+screen = pygame.display.set_mode((LARGURA_TELA, ALTURA_TELA))
+pygame.display.set_caption("Board Game com A*")
 
-#função para obter os quadrados vizinhos
-def obter_vizinhos(no: Node, matriz_terreno: list) -> list[Node]:
-    vizinhos = []
-    movimentos = [(0, 1), (1, 0), (0, -1), (-1, 0)]
-    
-    for movimento in movimentos:
-        novo_x = no.x + movimento[0]
-        novo_y = no.y + movimento[1]
-        
-        if 0 <= novo_x < len(matriz_terreno) and 0 <= novo_y < len(matriz_terreno[0]) and matriz_terreno[novo_x][novo_y] < float('inf'):
-            vizinhos.append(Node(novo_x, novo_y, 0, 0))
-            
-    return vizinhos
+# Posição inicial do personagem
+posicao_personagem = (22, 18)  # Posição inicial do personagem (círculo)
 
-# A*
-def AStar(origem: Node, destino: Node, matriz_terreno: list) -> int | str:
-    lista_aberta = []
-    lista_fechada = []
-    
-    lista_aberta.append(origem)
-    
-    while lista_aberta:
-        atual:Node = min(lista_aberta, key=lambda n: n.f)
-        
-        if atual == destino:
-            return atual.custo_acumulado
-        
-        lista_aberta.remove(atual)
-        lista_fechada.append(atual)
-        
-        for vizinho in obter_vizinhos(atual, matriz_terreno):
-            g = atual.custo_acumulado + matriz_terreno[vizinho.x][vizinho.y]
-            h = distancia_manhattan(vizinho, destino)
-            vizinho.custo_heuristico = h
-            
-            if vizinho in lista_fechada:
-                continue
-            
-            if vizinho not in lista_aberta:
-                lista_aberta.append(vizinho)
-                vizinho.custo_acumulado = g
-                vizinho.f = g + h
-            else:
-                if g < vizinho.custo_acumulado:
-                    vizinho.custo_acumulado = g
-                    vizinho.f = g + h
-                
-    return 'sem solução'
+# Lista de amigos com coordenadas de exemplo
+amigos = [(4, 12), (5, 34), (9, 8), (23, 37), (35, 14), (36, 36)]
 
-def encontrar_amigo_mais_proximo(atual: Node, amigos: list) -> Node:
-    amigo_mais_proximo = None
-    menor_distancia = float('inf')
-    
+# Função para desenhar o grid do mapa com borda preta em cada célula
+def desenhar_mapa(matriz):
+    for i, linha in enumerate(matriz):
+        for j, custo in enumerate(linha):
+            cor = CORES.get(custo, (255, 255, 255)) #cor / cor para valor nao digitado
+            pygame.draw.rect(screen, cor, (j * tamanho_celula, i * tamanho_celula, tamanho_celula, tamanho_celula))
+            # bordas
+            pygame.draw.rect(screen, (0, 0, 0), (j * tamanho_celula, i * tamanho_celula, tamanho_celula, tamanho_celula), 1)
+
+# Função para desenhar o personagem e os amigos
+def desenhar_personagens(personagem, amigos):
+    # personagem inicial
+    pygame.draw.circle(screen, (0, 0, 255), 
+                       (personagem[1] * tamanho_celula + tamanho_celula // 2, personagem[0] * tamanho_celula + tamanho_celula // 2),
+                       tamanho_celula // 2)
+
+    # amigos
     for amigo in amigos:
-        distancia = distancia_manhattan(atual, amigo)
-        if distancia < menor_distancia:
-            menor_distancia = distancia
-            amigo_mais_proximo = amigo
-            
-    return amigo_mais_proximo
+        x = amigo[1] * tamanho_celula
+        y = amigo[0] * tamanho_celula
+        pontos_triangulo = [(x + tamanho_celula // 2, y), (x, y + tamanho_celula), (x + tamanho_celula, y + tamanho_celula)]
+        pygame.draw.polygon(screen, (255, 0, 0), pontos_triangulo)
 
-def busca_amigos(origem: Node, amigos: list[Node], matriz_terreno: list) -> list:
-    aceitos, nao_aceitos = sorteio_amigos(amigos)
-    aceitos_encontrados = 0
-    retorno = origem
-    custo_total = 0
-    
-    while aceitos_encontrados < 3:
-        amigo_mais_proximo = encontrar_amigo_mais_proximo(origem, amigos)
-        
-        custo = AStar(origem, amigo_mais_proximo, matriz_terreno)
-        custo_total += custo
-        origem = amigo_mais_proximo
-        
-        aceitou = amigo_mais_proximo in aceitos
-        print(f'Custo para encontrar o amigo {amigo_mais_proximo.x, amigo_mais_proximo.y}: {custo}, aceitou? {aceitou}')
-        
-        if aceitou:
-            aceitos_encontrados += 1
-            if aceitos_encontrados >= 3:
-                print('3 amigos encontrados, vamos retornar para casa')
-                
-        amigos.remove(amigo_mais_proximo)
-    
-    custo_retorno = AStar(origem, retorno, matriz_terreno)
-    custo_total += custo_retorno
-    print(f'Retornamos para casa e o custo foi: {custo}')
-    print(f'O custo total foi: {custo_total}')
-    return aceitos
-
+#matriz do tabuleiro
 MATRIZ = [
     [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
     [5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 5, 5, 5, 5, 10, 10, 10, 10, 10, 1, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
@@ -165,10 +95,17 @@ MATRIZ = [
     [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5]
 ]
 
-#for i in range (len(PERSONAGENS)):
-#    print(f'Distancia entre a origem e o ponto {i}: {distancia_manhattan(INICIO, PERSONAGENS[i])}')
-INICIO = Node(22, 18)
-PERSONAGENS = [Node(4, 12), Node(5, 34), Node(9, 8), Node(23, 37), Node(35, 14), Node(36, 36)]
+# Loop principal do jogo
+executando = True
+while executando:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            executando = False
 
-aceitos = busca_amigos(INICIO, PERSONAGENS, MATRIZ)
-print("Amigos que aceitaram:", [(amigo.x, amigo.y) for amigo in aceitos])
+    screen.fill((0, 0, 0))  # Limpa a tela
+    desenhar_mapa(MATRIZ)  # Desenha o mapa
+    desenhar_personagens(posicao_personagem, amigos)  # Desenha o personagem e os amigos
+
+    pygame.display.flip()
+
+pygame.quit()
