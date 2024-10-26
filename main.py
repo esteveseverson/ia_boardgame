@@ -3,7 +3,7 @@ import random
 
 #classes
 class Node:
-    def __init__(self, x: int, y: int, custo_acumulado=0, custo_heuristico=0):
+    def __init__(self, x: int, y: int, custo_acumulado=0, custo_heuristico=0, parent = None):
         #localizações
         self.x = x
         self.y = y
@@ -11,6 +11,7 @@ class Node:
         self.custo_acumulado = custo_acumulado
         self.custo_heuristico = custo_heuristico
         self.f = custo_acumulado + custo_heuristico # f = g + h
+        self.parent = parent
         
     def __eq__(self, other) -> bool:
         return self.x == other.x and self.y == other.y
@@ -31,23 +32,27 @@ def distancia_manhattan(ponto1: Node, ponto2: Node) -> int:
     return abs(ponto1.x - ponto2.x) + abs(ponto1.y - ponto2.y)
 
 #função para obter os quadrados vizinhos
-def obter_vizinhos(no: Node, matriz_terreno: list) -> list[Node]:
+def obter_vizinhos(no: Node, matriz_terreno: list) -> list[Node] | list[str]:
     vizinhos = []
     movimentos = [(0, 1), (1, 0), (0, -1), (-1, 0)]
+    direcoes = ['direita', 'baixo', 'esquerda', 'cima']
+    lista_direc = []
     
-    for movimento in movimentos:
+    for i, movimento in enumerate(movimentos):
         novo_x = no.x + movimento[0]
         novo_y = no.y + movimento[1]
         
         if 0 <= novo_x < len(matriz_terreno) and 0 <= novo_y < len(matriz_terreno[0]) and matriz_terreno[novo_x][novo_y] < float('inf'):
-            vizinhos.append(Node(novo_x, novo_y, 0, 0))
-            
+            vizinhos.append(Node(novo_x, novo_y, 0, 0, no))
+            lista_direc.append(direcoes[i])
+    
     return vizinhos
 
 # A*
-def AStar(origem: Node, destino: Node, matriz_terreno: list) -> int | str:
+def AStar(origem: Node, destino: Node, matriz_terreno: list) -> int | list:
     lista_aberta = []
     lista_fechada = []
+    movimentos_realizados = []
     
     lista_aberta.append(origem)
     
@@ -55,7 +60,26 @@ def AStar(origem: Node, destino: Node, matriz_terreno: list) -> int | str:
         atual:Node = min(lista_aberta, key=lambda n: n.f)
         
         if atual == destino:
-            return atual.custo_acumulado
+            custo = atual.custo_acumulado
+            caminho = []
+            
+            while atual.parent:
+                dx = atual.x - atual.parent.x
+                dy = atual.y - atual.parent.y
+                
+                if dx == 0 and dy == 1:
+                    caminho.append("direita")
+                elif dx == 1 and dy == 0:
+                    caminho.append("baixo")
+                elif dx == 0 and dy == -1:
+                    caminho.append("esquerda")
+                elif dx == -1 and dy == 0:
+                    caminho.append("cima")
+                atual = atual.parent
+                
+            movimentos_realizados.extend(caminho[::-1])
+            print(f'movimentos realizados: {movimentos_realizados}')
+            return custo, movimentos_realizados
         
         lista_aberta.remove(atual)
         lista_fechada.append(atual)
@@ -77,7 +101,7 @@ def AStar(origem: Node, destino: Node, matriz_terreno: list) -> int | str:
                     vizinho.custo_acumulado = g
                     vizinho.f = g + h
                 
-    return 'sem solução'
+    return None
 
 def encontrar_amigo_mais_proximo(atual: Node, amigos: list) -> Node:
     amigo_mais_proximo = None
@@ -96,13 +120,17 @@ def busca_amigos(origem: Node, amigos: list[Node], matriz_terreno: list) -> list
     aceitos_encontrados = 0
     retorno = origem
     custo_total = 0
+    todos_movimentos = []
     
     while aceitos_encontrados < 3:
         amigo_mais_proximo = encontrar_amigo_mais_proximo(origem, amigos)
         
-        custo = AStar(origem, amigo_mais_proximo, matriz_terreno)
+        custo, movimentos = AStar(origem, amigo_mais_proximo, matriz_terreno)
         custo_total += custo
         origem = amigo_mais_proximo
+        
+        for movimento in movimentos:
+            todos_movimentos.append(movimento)
         
         aceitou = amigo_mais_proximo in aceitos
         print(f'Custo para encontrar o amigo {amigo_mais_proximo.x, amigo_mais_proximo.y}: {custo}, aceitou? {aceitou}')
@@ -114,11 +142,15 @@ def busca_amigos(origem: Node, amigos: list[Node], matriz_terreno: list) -> list
                 
         amigos.remove(amigo_mais_proximo)
     
-    custo_retorno = AStar(origem, retorno, matriz_terreno)
+    custo_retorno, movimentos_retorno = AStar(origem, retorno, matriz_terreno)
     custo_total += custo_retorno
+    
+    for movimento in movimentos_retorno:
+        todos_movimentos.append(movimento)
+
     print(f'Retornamos para casa e o custo foi: {custo}')
     print(f'O custo total foi: {custo_total}')
-    return aceitos
+    return aceitos, todos_movimentos
 
 MATRIZ = [
     [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
@@ -165,10 +197,9 @@ MATRIZ = [
     [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5]
 ]
 
-#for i in range (len(PERSONAGENS)):
-#    print(f'Distancia entre a origem e o ponto {i}: {distancia_manhattan(INICIO, PERSONAGENS[i])}')
 INICIO = Node(22, 18)
 PERSONAGENS = [Node(4, 12), Node(5, 34), Node(9, 8), Node(23, 37), Node(35, 14), Node(36, 36)]
 
-aceitos = busca_amigos(INICIO, PERSONAGENS, MATRIZ)
+aceitos, movimentos = busca_amigos(INICIO, PERSONAGENS, MATRIZ)
 print("Amigos que aceitaram:", [(amigo.x, amigo.y) for amigo in aceitos])
+print(f'Foram {len(movimentos)} movimentos: {movimentos}')
