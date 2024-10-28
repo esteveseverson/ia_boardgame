@@ -199,6 +199,7 @@ MATRIZ = [
 
 INICIO = Node(22, 18)
 PERSONAGENS = [Node(4, 12), Node(5, 34), Node(9, 8), Node(23, 37), Node(35, 14), Node(36, 36)]
+#PERSONAGENS = [Node(23, 37), Node(35, 14), Node(36, 36)] #caminho mais curto
 
 aceitos, movimentos = busca_amigos(INICIO, PERSONAGENS, MATRIZ)
 print("Amigos que aceitaram:", [(amigo.x, amigo.y) for amigo in aceitos])
